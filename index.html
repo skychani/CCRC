@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>공동주택 초기검토 — 사업성 산출기</title>
+<style>
+/* ════════════════════════════════════════
+   DESIGN TOKENS
+════════════════════════════════════════ */
+:root {
+  --bg:        #111318;
+  --surface:   #1a1d27;
+  --panel:     #20253a;
+  --border:    #2a2f4a;
+  --accent:    #5b7cfa;
+  --accent-dim:rgba(91,124,250,.12);
+  --green:     #22c55e;
+  --green-dim: rgba(34,197,94,.12);
+  --yellow:    #f59e0b;
+  --yellow-dim:rgba(245,158,11,.12);
+  --red:       #ef4444;
+  --red-dim:   rgba(239,68,68,.12);
+  --purple:    #a78bfa;
+  --text:      #e2e8f0;
+  --dim:       #94a3b8;
+  --muted:     #4a5272;
+  --mono:      'JetBrains Mono','Fira Code',monospace;
+  --sans:      'Pretendard','Noto Sans KR',system-ui,sans-serif;
+  --r:         8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* ── HEADER ── */
+.app-header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 24px;height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+}
+.app-header h1{font-size:14px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.app-header h1 .tag{
+  font-family:var(--mono);font-size:11px;
+  background:var(--accent-dim);color:var(--accent);
+  border:1px solid rgba(91,124,250,.25);
+  padding:2px 8px;border-radius:4px;font-weight:400
+}
+.header-actions{display:flex;gap:8px;align-items:center}
+
+/* ── TAB BAR ── */
+.tab-bar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;padding:0 24px;
+}
+.tab-btn{
+  background:none;border:none;color:var(--dim);
+  font-size:13px;font-family:var(--sans);
+  padding:10px 18px;cursor:pointer;
+  border-bottom:2px solid transparent;
+  transition:color .15s,border-color .15s;white-space:nowrap;
+}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+
+/* ── KPI BANNER ── */
+.kpi-banner{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  border-bottom:1px solid var(--border);background:var(--surface);
+}
+.kpi-cell{padding:12px 20px;border-right:1px solid var(--border)}
+.kpi-cell:last-child{border-right:none}
+.kpi-label{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.kpi-val{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text);line-height:1}
+.kpi-sub{font-size:10px;color:var(--dim);margin-top:3px}
+.kpi-cell.green .kpi-val{color:var(--green)}
+.kpi-cell.yellow .kpi-val{color:var(--yellow)}
+.kpi-cell.red .kpi-val{color:var(--red)}
+.kpi-cell.accent .kpi-val{color:var(--accent)}
+
+/* ── LAYOUT ── */
+.tab-content{display:none}
+.tab-content.active{display:block}
+.two-col{display:grid;grid-template-columns:420px 1fr;min-height:calc(100vh - 120px)}
+.col-left{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding-bottom:60px}
+.col-right{background:var(--bg);padding:20px 24px;overflow-y:auto}
+
+/* ── SECTION ── */
+.sec-head{
+  padding:12px 20px 8px;
+  font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface);position:sticky;top:0;z-index:10;
+}
+.sec-head .num{
+  font-family:var(--mono);font-size:11px;color:var(--accent);
+  background:var(--accent-dim);border:1px solid rgba(91,124,250,.2);
+  padding:1px 7px;border-radius:3px;
+}
+.sec-body{padding:14px 18px;border-bottom:1px solid var(--border)}
+
+/* ── FORM ── */
+.row{display:grid;gap:10px;margin-bottom:10px}
+.row:last-child{margin-bottom:0}
+.r2{grid-template-columns:1fr 1fr}
+.r3{grid-template-columns:1fr 1fr 1fr}
+.r1{grid-template-columns:1fr}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;color:var(--dim);font-weight:500}
+.field input,.field select{
+  background:var(--panel);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);font-size:13px;font-family:var(--mono);
+  padding:6px 10px;width:100%;outline:none;transition:border-color .15s;
+}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field .hint{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* ── TYPE PILLS ── */
+.type-pills{display:flex;gap:6px;padding:14px 18px 10px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.pill{
+  background:var(--panel);border:1px solid var(--border);
+  color:var(--dim);font-size:12px;font-weight:600;
+  padding:5px 14px;border-radius:20px;cursor:pointer;transition:all .15s;
+}
+.pill:hover{border-color:var(--accent);color:var(--text)}
+.pill.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+
+/* ── UNIT TABLE ── */
+.unit-wrap{overflow-x:auto}
+table.ut{width:100%;border-collapse:collapse;min-width:480px}
+table.ut th{
+  font-size:10px;color:var(--muted);text-align:left;
+  padding:5px 6px;border-bottom:1px solid var(--border);
+  font-weight:600;letter-spacing:.04em;background:var(--panel);white-space:nowrap;
+}
+table.ut td{padding:3px 4px;border-bottom:1px solid rgba(42,47,74,.5)}
+table.ut td input,table.ut td select{
+  background:var(--panel);border:1px solid var(--border);border-radius:4px;
+  color:var(--text);font-size:12px;font-family:var(--mono);
+  padding:4px 6px;width:100%;outline:none;transition:border-color .15s;
+}
+table.ut td input:focus{border-color:var(--accent)}
+.btn-add{
+  background:var(--accent-dim);border:1px dashed rgba(91,124,250,.4);
+  color:var(--accent);border-radius:6px;padding:6px 14px;
+  font-size:12px;cursor:pointer;width:100%;margin-top:8px;transition:background .15s;
+}
+.btn-add:hover{background:rgba(91,124,250,.2)}
+.btn-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:3px}
+.btn-del:hover{color:var(--red)}
+
+/* ── TOGGLE ROW ── */
+.sqm-toggle{
+  display:inline-flex;background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;
+}
+.sqm-btn{
+  background:none;border:none;color:var(--dim);font-size:11px;font-family:var(--mono);
+  padding:4px 10px;cursor:pointer;transition:all .15s;
+}
+.sqm-btn.active{background:var(--accent);color:#fff}
+
+/* ── RESULT PANEL ── */
+.res-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
+.res-head{
+  padding:11px 16px;border-bottom:1px solid var(--border);
+  font-size:11px;font-weight:700;color:var(--dim);
+  letter-spacing:.04em;text-transform:uppercase;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.res-body{padding:14px 16px}
+
+.dr{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(42,47,74,.4)}
+.dr:last-child{border-bottom:none}
+.dl{font-size:13px;color:var(--dim)}
+.dl.i{padding-left:14px;font-size:12px;color:var(--muted)}
+.dl.bold{font-weight:700;color:var(--text)}
+.dv{font-family:var(--mono);font-size:13px;color:var(--text);text-align:right}
+.dv.tot{font-weight:700;font-size:14px;color:var(--accent)}
+.dv.sub{font-weight:600;color:var(--dim)}
+.dv.g{color:var(--green)}.dv.y{color:var(--yellow)}.dv.r{color:var(--red)}
+.divl{border-top:1px solid var(--border);margin:6px 0}
+
+/* ── 2-COL RESULT GRID ── */
+.res-two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+
+/* ── ALERT ── */
+.alert{padding:9px 13px;border-radius:6px;font-size:12px;line-height:1.5;margin-top:8px}
+.alert.g{background:var(--green-dim);border:1px solid rgba(34,197,94,.25);color:var(--green)}
+.alert.y{background:var(--yellow-dim);border:1px solid rgba(245,158,11,.25);color:var(--yellow)}
+.alert.r{background:var(--red-dim);border:1px solid rgba(239,68,68,.25);color:var(--red)}
+.alert.a{background:var(--accent-dim);border:1px solid rgba(91,124,250,.25);color:var(--accent)}
+
+/* ── SENSITIVITY TABLE ── */
+table.sens{width:100%;border-collapse:collapse}
+table.sens th{font-size:10px;color:var(--muted);text-align:center;padding:6px 10px;border-bottom:1px solid var(--border);font-weight:600;background:var(--panel);letter-spacing:.03em;white-space:nowrap}
+table.sens td{font-family:var(--mono);font-size:12px;text-align:center;padding:6px 10px;border-bottom:1px solid rgba(42,47,74,.4);color:var(--dim)}
+table.sens td:first-child{text-align:left;color:var(--text);font-family:var(--sans);font-size:12px}
+table.sens .base td{background:rgba(91,124,250,.06)}
+.cg{color:var(--green)}.cy{color:var(--yellow)}.cr{color:var(--red)}.ca{color:var(--accent);font-weight:700}
+
+/* ── QUICK SUMMARY CARDS ── */
+.res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.rg-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.rg-label{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+.rg-val{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--text)}
+.rg-sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* ── UNIT RESULT TABLE ── */
+table.urt{width:100%;border-collapse:collapse}
+table.urt th{font-size:10px;color:var(--muted);text-align:right;padding:5px 8px;border-bottom:1px solid var(--border);font-weight:600;letter-spacing:.03em;white-space:nowrap}
+table.urt th:first-child{text-align:left}
+table.urt td{font-family:var(--mono);font-size:12px;text-align:right;padding:5px 8px;border-bottom:1px solid rgba(42,47,74,.3);color:var(--dim)}
+table.urt td:first-child{text-align:left;color:var(--text);font-family:var(--sans)}
+table.urt tr:last-child td{border-bottom:none;font-weight:700;color:var(--text)}
+
+/* ── BUTTONS ── */
+.btn-primary{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-primary:hover{opacity:.85}
+.btn-sec{background:var(--panel);color:var(--dim);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;transition:background .15s}
+.btn-sec:hover{background:var(--border)}
+
+.hidden{display:none!important}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+@media(max-width:860px){
+  .two-col{grid-template-columns:1fr}
+  .kpi-banner{grid-template-columns:repeat(3,1fr)}
+  .res-grid{grid-template-columns:repeat(2,1fr)}
+  .res-two-col{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <h1>공동주택 초기검토 <span class="tag">사업성 산출기 v3</span></h1>
+  <div class="header-actions">
+    <div class="sqm-toggle">
+      <button class="sqm-btn active" id="btn_sqm" onclick="setUnit('sqm')">㎡</button>
+      <button class="sqm-btn" id="btn_pyg" onclick="setUnit('pyg')">평</button>
+    </div>
+    <button class="btn-sec" onclick="resetAll()">초기화</button>
+    <button class="btn-primary" onclick="calculate()">산출 실행</button>
+  </div>
+</div>
+
+<!-- KPI BANNER -->
+<div class="kpi-banner">
+  <div class="kpi-cell" id="kpi1">
+    <div class="kpi-label">총 사업비</div>
+    <div class="kpi-val" id="kv1">—</div>
+    <div class="kpi-sub">공사비 + 부대비용</div>
+  </div>
+  <div class="kpi-cell" id="kpi2">
+    <div class="kpi-label">총 수입</div>
+    <div class="kpi-val" id="kv2">—</div>
+    <div class="kpi-sub">분양 / 임대 수익</div>
+  </div>
+  <div class="kpi-cell" id="kpi3">
+    <div class="kpi-label">사업 이익</div>
+    <div class="kpi-val" id="kv3">—</div>
+    <div class="kpi-sub">수입 – 사업비</div>
+  </div>
+  <div class="kpi-cell" id="kpi4">
+    <div class="kpi-label" id="kpi4_label">비례율</div>
+    <div class="kpi-val" id="kv4">—</div>
+    <div class="kpi-sub" id="kpi4_sub">사업성 핵심 지표</div>
+  </div>
+  <div class="kpi-cell" id="kpi5">
+    <div class="kpi-label">IRR (연환산)</div>
+    <div class="kpi-val" id="kv5">—</div>
+    <div class="kpi-sub">자기자본 기준 NPV법</div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('input',this)">입력</button>
+  <button class="tab-btn" onclick="switchTab('result',this)">결과 분석</button>
+  <button class="tab-btn" onclick="switchTab('sensitivity',this)">민감도</button>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB: INPUT
+══════════════════════════════════════ -->
+<div id="tab-input" class="tab-content active">
+<div class="two-col">
+<div class="col-left">
+
+  <!-- 건물 유형 -->
+  <div class="sec-head"><span class="num">01</span> 건물 유형</div>
+  <div class="type-pills" id="type_pills">
+    <div class="pill active" data-type="apt"    onclick="selectType('apt',this)">아파트</div>
+    <div class="pill"        data-type="row"    onclick="selectType('row',this)">연립주택</div>
+    <div class="pill"        data-type="multi"  onclick="selectType('multi',this)">다세대주택</div>
+    <div class="pill"        data-type="single" onclick="selectType('single',this)">다가구주택</div>
+  </div>
+  <div style="padding:10px 18px 4px;border-bottom:1px solid var(--border)">
+    <div class="alert a" id="type_desc_text">아파트: 5층 이상 공동주택. 구분등기·분양 가능. 조합원 분담금 구조 적용.</div>
+  </div>
+
+  <!-- 사업 개요 -->
+  <div class="sec-head"><span class="num">02</span> 사업 개요</div>
+  <div class="sec-body">
+    <div class="row r3">
+      <div class="field">
+        <label>대지면적 (<span class="unit-label">㎡</span>)</label>
+        <input type="number" id="site_area" value="4200" step="10" oninput="liveUpdate()">
+      </div>
+      <div class="field">
+        <label>용적률 (%)</label>
+        <input type="number" id="far" value="230" step="5" oninput="liveUpdate()">
+      </div>
+      <div class="field">
+        <label>건폐율 (%)</label>
+        <input type="number" id="bcr" value="50" step="1" oninput="liveUpdate()">
+      </div>
+    </div>
+    <div class="row r3">
+      <div class="field">
+        <label>지상 층수</label>
+        <input type="number" id="floors_above" value="15" step="1" oninput="liveUpdate()">
+      </div>
+      <div class="field">
+        <label>지하 층수</label>
+        <input type="number" id="floors_below" value="2" step="1" oninput="liveUpdate()">
+      </div>
+      <div class="field">
+        <label>주차 기준 (대/세대)</label>
+        <input type="number" id="parking_ratio" value="1.0" step="0.1" oninput="liveUpdate()">
+      </div>
+    </div>
+    <!-- 조합원 (아파트/연립) -->
+    <div id="member_section">
+      <div class="row r2">
+        <div class="field">
+          <label>종전자산 평가액 합계 (백만원)</label>
+          <input type="number" id="prior_asset" value="6300" step="500" oninput="liveUpdate()">
+          <span class="hint">조합원 권리가액 산정 기준</span>
+        </div>
+        <div class="field">
+          <label>조합원 수 (명)</label>
+          <input type="number" id="member_count" value="42" step="1" oninput="liveUpdate()">
+        </div>
+      </div>
+    </div>
+    <!-- 다가구 전용 -->
+    <div id="dagage_section" class="hidden">
+      <div class="row r2">
+        <div class="field">
+          <label>주택 연면적 (㎡)</label>
+          <input type="number" id="dg_house_area" value="320" step="10" oninput="liveUpdate()">
+          <span class="hint">660㎡ 이하 제한</span>
+        </div>
+        <div class="field">
+          <label>임대 세대수</label>
+          <input type="number" id="dg_units" value="9" step="1" oninput="liveUpdate()">
+          <span class="hint">19세대 이하</span>
+        </div>
+      </div>
+      <div class="row r2">
+        <div class="field">
+          <label>보증금 평균 (백만원/세대)</label>
+          <input type="number" id="dg_deposit" value="150" step="10" oninput="liveUpdate()">
+        </div>
+        <div class="field">
+          <label>월세 평균 (만원/세대)</label>
+          <input type="number" id="dg_monthly" value="80" step="5" oninput="liveUpdate()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 세대 구성 -->
+  <div id="unit_section">
+    <div class="sec-head"><span class="num">03</span> 세대 구성 (타입별)</div>
+    <div class="sec-body">
+      <div class="unit-wrap">
+        <table class="ut">
+          <thead>
+            <tr>
+              <th>타입</th>
+              <th>전용(㎡)</th>
+              <th>공용비율</th>
+              <th id="col_member_h">조합(세대)</th>
+              <th>분양(세대)</th>
+              <th>분양가(만/㎡)</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="unit_tbody"></tbody>
+        </table>
+      </div>
+      <button class="btn-add" onclick="addUnitRow()">+ 타입 추가</button>
+      <div class="alert a" id="unit_summary" style="margin-top:8px">세대 입력 후 산출 실행</div>
+    </div>
+  </div>
+
+  <!-- 공사비 -->
+  <div class="sec-head"><span class="num" id="cost_sec_num">04</span> 공사비 기준</div>
+  <div class="sec-body">
+    <div class="row r2">
+      <div class="field">
+        <label>지상 공사비 단가 (만원/㎡)</label>
+        <input type="number" id="cost_above" value="640" step="10" oninput="liveUpdate()">
+        <span class="hint">공급면적 기준 (2024~25년 서울 기준)</span>
+      </div>
+      <div class="field">
+        <label>지하 공사비 단가 (만원/㎡)</label>
+        <input type="number" id="cost_below" value="420" step="10" oninput="liveUpdate()">
+        <span class="hint">지하연면적 기준</span>
+      </div>
+    </div>
+    <div class="row r2">
+      <div class="field">
+        <label>설계·감리비 (공사비 %)</label>
+        <input type="number" id="design_pct" value="6.0" step="0.5" oninput="liveUpdate()">
+      </div>
+      <div class="field">
+        <label>인허가·부대비 (공사비 %)</label>
+        <input type="number" id="permit_pct" value="2.5" step="0.5" oninput="liveUpdate()">
+      </div>
+    </div>
+    <div class="row r3">
+      <div class="field">
+        <label>이주비 (만원/세대)</label>
+        <input type="number" id="reloc_per_unit" value="5000" step="100" oninput="liveUpdate()">
+        <span class="hint">조합원 수 × 단가 자동 산정</span>
+      </div>
+      <div class="field">
+        <label>철거·측량비 (백만원)</label>
+        <input type="number" id="demolition_cost" value="300" step="50" oninput="liveUpdate()">
+      </div>
+      <div class="field">
+        <label>조합운영비 (공사비 %)</label>
+        <input type="number" id="union_pct" value="1.5" step="0.5" oninput="liveUpdate()">
+        <span class="hint">총회비·업무추진비 등</span>
+      </div>
+    </div>
+    <div class="row r3">
+      <div class="field">
+        <label>제세금·신탁보수 (백만원)</label>
+        <input type="number" id="tax_trust" value="600" step="50" oninput="liveUpdate()">
+      </div>
+      <div class="field">
+        <label>금융비용 (공사비 %)</label>
+        <input type="number" id="finance_pct" value="9.0" step="0.5" oninput="liveUpdate()">
+        <span class="hint">PF 이자 총 누계</span>
+      </div>
+      <div class="field">
+        <label>분양·홍보비 (분양수입 %)</label>
+        <input type="number" id="sales_pct" value="2.0" step="0.5" oninput="liveUpdate()">
+      </div>
+    </div>
+  </div>
+
+  <!-- HUG (아파트/연립) -->
+  <div id="hug_section">
+    <div class="sec-head"><span class="num">05</span> HUG 보증 / 금융</div>
+    <div class="sec-body">
+      <div class="row r2">
+        <div class="field">
+          <label>HUG 적용 여부</label>
+          <select id="hug_yn" onchange="liveUpdate()">
+            <option value="y">적용 (분양보증)</option>
+            <option value="n">미적용</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>분양가 심사 한도 (만원/㎡)</label>
+          <input type="number" id="hug_limit" value="1700" step="10" oninput="liveUpdate()">
+          <span class="hint">마포구 2025년 기준</span>
+        </div>
+      </div>
+      <div class="row r2">
+        <div class="field">
+          <label>PF 대출 LTV (%)</label>
+          <input type="number" id="pf_ltv" value="60" step="5" oninput="liveUpdate()">
+          <span class="hint">총사업비 대비 (HUG·DCF 공용)</span>
+        </div>
+        <div class="field">
+          <label>이주비 보증 한도 (백만원)</label>
+          <input type="number" id="hug_reloc_limit" value="1500" step="100" oninput="liveUpdate()">
+          <span class="hint">HUG 이주비 보증 승인 총액</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DCF -->
+  <div class="sec-head"><span class="num" id="dcf_sec_num">06</span> 현금흐름 가정 (IRR/NPV)</div>
+  <div class="sec-body">
+    <div class="row r3">
+      <div class="field">
+        <label>사업 기간 (개월)</label>
+        <input type="number" id="project_months" value="60" step="6" oninput="liveUpdate()">
+        <span class="hint">인허가~준공 기준</span>
+      </div>
+      <div class="field">
+        <label>할인율 (연 %)</label>
+        <input type="number" id="discount_rate" value="8.0" step="0.5" oninput="liveUpdate()">
+      </div>
+      <div class="field">
+        <label>분양수입 시점 (개월)</label>
+        <input type="number" id="revenue_month" value="36" step="3" oninput="liveUpdate()">
+        <span class="hint">착수 후 분양대금 집중 시점</span>
+      </div>
+    </div>
+    <div class="row r2">
+      <div class="field">
+        <label>자기자본 투입액 (백만원)</label>
+        <input type="number" id="equity_input" value="5000" step="500" oninput="liveUpdate()">
+        <span class="hint">초기 토지비·부대비 자부담</span>
+      </div>
+      <div class="field">
+        <label>비용 집중 구간 (개월)</label>
+        <input type="number" id="cost_spread" value="48" step="6" oninput="liveUpdate()">
+        <span class="hint">공사비 지출 종료 시점</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /col-left -->
+
+<!-- INPUT 탭 우측 -->
+<div class="col-right">
+  <div class="res-grid">
+    <div class="rg-card">
+      <div class="rg-label">대지면적</div>
+      <div class="rg-val" id="s_site">—</div>
+      <div class="rg-sub" id="s_site2">—</div>
+    </div>
+    <div class="rg-card">
+      <div class="rg-label">허용 연면적</div>
+      <div class="rg-val" id="s_gfa">—</div>
+      <div class="rg-sub">용적률 기준</div>
+    </div>
+    <div class="rg-card">
+      <div class="rg-label">총 세대수</div>
+      <div class="rg-val" id="s_units">—</div>
+      <div class="rg-sub" id="s_units2">—</div>
+    </div>
+  </div>
+
+  <div class="res-section">
+    <div class="res-head">세대 구성 요약</div>
+    <div class="res-body" style="padding:10px 16px">
+      <table class="urt">
+        <thead><tr>
+          <th>타입</th><th>전용(㎡)</th><th>공급(㎡)</th>
+          <th id="qth_member">조합</th><th>분양</th><th>합계</th>
+          <th>분양가(만/㎡)</th><th>분양수입(백만)</th>
+        </tr></thead>
+        <tbody id="unit_quick_tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="res-section">
+    <div class="res-head">비용 구성 미리보기</div>
+    <div class="res-body" id="cost_preview_body">산출 실행 전</div>
+  </div>
+</div>
+</div>
+</div><!-- /tab-input -->
+
+<!-- ══════════════════════════════════════
+     TAB: RESULT
+══════════════════════════════════════ -->
+<div id="tab-result" class="tab-content">
+<div style="padding:20px 24px">
+
+  <div class="res-two-col">
+    <!-- 좌측 -->
+    <div>
+      <div class="res-section">
+        <div class="res-head">면적 구성</div>
+        <div class="res-body">
+          <div class="dr"><span class="dl">대지면적</span><span class="dv" id="r_site">—</span></div>
+          <div class="dr"><span class="dl">허용 연면적 (용적률 기준)</span><span class="dv" id="r_allow_gfa">—</span></div>
+          <div class="dr"><span class="dl i">지상 연면적 (공급면적 기준)</span><span class="dv" id="r_above">—</span></div>
+          <div class="dr"><span class="dl i">지하 연면적</span><span class="dv" id="r_below">—</span></div>
+          <div class="dr"><span class="dl">전용면적 합계</span><span class="dv" id="r_excl">—</span></div>
+          <div class="dr"><span class="dl">공급면적 합계</span><span class="dv" id="r_supply">—</span></div>
+          <div class="dr"><span class="dl bold">총 세대수</span><span class="dv" id="r_units">—</span></div>
+          <div id="r_units_detail"></div>
+        </div>
+      </div>
+
+      <div class="res-section">
+        <div class="res-head">공사비 상세</div>
+        <div class="res-body">
+          <div class="dr"><span class="dl">지상 공사비</span><span class="dv" id="r_c_above">—</span></div>
+          <div class="dr"><span class="dl">지하 공사비</span><span class="dv" id="r_c_below">—</span></div>
+          <div class="dr"><span class="dl sub">직접 공사비 소계</span><span class="dv sub" id="r_c_direct">—</span></div>
+          <div class="divl"></div>
+          <div class="dr"><span class="dl">설계·감리비</span><span class="dv" id="r_c_design">—</span></div>
+          <div class="dr"><span class="dl">인허가·부대비</span><span class="dv" id="r_c_permit">—</span></div>
+          <div class="dr"><span class="dl">이주비 <span id="r_reloc_note" style="font-size:10px;color:var(--muted)"></span></span><span class="dv" id="r_c_reloc">—</span></div>
+          <div class="dr"><span class="dl">철거·측량비</span><span class="dv" id="r_c_demolition">—</span></div>
+          <div class="dr"><span class="dl">조합운영비</span><span class="dv" id="r_c_union">—</span></div>
+          <div class="dr"><span class="dl">제세금·신탁보수</span><span class="dv" id="r_c_tax">—</span></div>
+          <div class="dr"><span class="dl">금융비용</span><span class="dv" id="r_c_finance">—</span></div>
+          <div class="dr"><span class="dl">분양·홍보비</span><span class="dv" id="r_c_sales">—</span></div>
+          <div class="divl"></div>
+          <div class="dr"><span class="dl bold">총 사업비</span><span class="dv tot" id="r_total_cost">—</span></div>
+        </div>
+      </div>
+
+      <div class="res-section">
+        <div class="res-head">DCF 분석 (IRR / NPV)</div>
+        <div class="res-body">
+          <div class="dr"><span class="dl">사업 기간</span><span class="dv" id="r_months">—</span></div>
+          <div class="dr"><span class="dl">자기자본 투입</span><span class="dv" id="r_equity">—</span></div>
+          <div class="dr"><span class="dl">PF 대출 (LTV 기준)</span><span class="dv" id="r_pf">—</span></div>
+          <div class="divl"></div>
+          <div class="dr"><span class="dl bold">NPV (할인율 기준)</span><span class="dv tot" id="r_npv">—</span></div>
+          <div class="dr"><span class="dl bold">IRR (Newton-Raphson)</span><span class="dv tot" id="r_irr">—</span></div>
+          <div id="r_irr_alert"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 우측 -->
+    <div>
+      <div class="res-section" id="r_income_section">
+        <div class="res-head" id="r_income_head">수익성 분석</div>
+        <div class="res-body" id="r_income_body">—</div>
+      </div>
+
+      <div class="res-section" id="r_hug_section">
+        <div class="res-head">HUG 보증 검토</div>
+        <div class="res-body" id="r_hug_body">—</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /tab-result -->
+
+<!-- ══════════════════════════════════════
+     TAB: SENSITIVITY
+══════════════════════════════════════ -->
+<div id="tab-sensitivity" class="tab-content">
+<div style="padding:20px 24px">
+
+  <div class="res-section">
+    <div class="res-head">민감도 분석 — 분양가 / 공사비 변동</div>
+    <div class="res-body" style="overflow-x:auto">
+      <table class="sens">
+        <thead>
+          <tr>
+            <th>시나리오</th>
+            <th>분양수입 (백만)</th>
+            <th>총사업비 (백만)</th>
+            <th>사업 이익 (백만)</th>
+            <th id="sens_th4">비례율 (%)</th>
+            <th>분담금/세대 (백만)</th>
+            <th>IRR (%)</th>
+          </tr>
+        </thead>
+        <tbody id="sens_tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="res-section" style="margin-top:14px">
+    <div class="res-head">유형별 법적 규모 기준</div>
+    <div class="res-body" id="legal_check_body">산출 실행 전</div>
+  </div>
+
+</div>
+</div><!-- /tab-sensitivity -->
+
+<script>
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let currentType = 'apt';
+let unitRows    = [];
+let rowId       = 0;
+let unitMode    = 'sqm'; // 'sqm' | 'pyg'
+let lastCalc    = {};
+
+const SQM_PER_PYONG = 3.30579;
+
+const TYPE_DESC = {
+  apt:    '아파트: 5층 이상 공동주택. 구분등기·분양 가능. 조합원 분담금 구조 적용.',
+  row:    '연립주택: 연면적 660㎡ 초과, 4층 이하 공동주택. 구분등기·분양 가능. 조합원 분담금 구조 적용.',
+  multi:  '다세대주택: 연면적 660㎡ 이하, 4층 이하 공동주택. 구분등기 가능. 조합원 분담금 없음 — 분양 수익 모델.',
+  single: '다가구주택: 단독주택 범주. 연면적 660㎡ 이하, 3층 이하, 19세대 이하. 구분등기 불가 — 임대수익 모델.'
+};
+
+// 공용비율 기본값 (전용면적대 구간별)
+function defaultCommonRatio(excl) {
+  if (excl < 50)  return 1.30;
+  if (excl < 60)  return 1.25;
+  if (excl < 85)  return 1.20;
+  return 1.15;
+}
+
+// 기본값: 대지 4,200㎡ / 용적률 230% → 허용 연면적 9,660㎡ 기준
+// 공급면적 합계 9,583㎡ (허용 대비 99.2%), 총 129세대, 조합원 42명
+const DEFAULT_UNITS = [
+  {id:0, type:'49A', excl:49, commonRatio:1.30, member:15, sale:26, price:1600},
+  {id:1, type:'59B', excl:59, commonRatio:1.25, member:17, sale:39, price:1700},
+  {id:2, type:'74C', excl:74, commonRatio:1.20, member:10, sale:22, price:1800},
+];
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+const $   = id => document.getElementById(id);
+const n   = id => parseFloat($(id)?.value) || 0;
+const fmt = (v,d=0) => v.toLocaleString('ko-KR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtM  = v => fmt(Math.round(v)) + ' 백만';
+const fmtB  = v => (v/100).toFixed(1) + ' 억';  // v: 백만원
+const fmtP  = v => fmt(v,1) + '%';
+const sqm2p = v => (v / SQM_PER_PYONG).toFixed(1);
+const areaStr = v => unitMode==='sqm' ? fmt(v,1)+'㎡' : sqm2p(v)+'평';
+
+function setDv(id, val, cls='') {
+  const el=$(id); if(!el) return;
+  el.textContent = val;
+  el.className   = cls ? 'dv '+cls : 'dv';
+}
+
+// Newton-Raphson IRR
+function calcIRR(cashflows, guess=0.1) {
+  let r = guess;
+  for (let i=0; i<100; i++) {
+    let npv=0, dnpv=0;
+    cashflows.forEach((cf,t)=>{
+      const d = Math.pow(1+r, t);
+      npv  += cf / d;
+      dnpv -= t * cf / (d*(1+r));
+    });
+    if (Math.abs(dnpv) < 1e-10) break;
+    const rNew = r - npv/dnpv;
+    if (Math.abs(rNew-r) < 1e-8) { r=rNew; break; }
+    r = rNew;
+  }
+  return r;
+}
+
+// 월별 IRR → 연환산
+function calcMonthlyIRR(totalCost, totalRevenue, equity, projMonths, revMonth, costSpread) {
+  // 현금흐름 구성:
+  // t=0: -equity (자기자본 즉시 투입)
+  // t=1~costSpread: 공사비 지출 (PF 조달분) → 월별 균등 (현금흐름 0, PF가 커버)
+  // t=revMonth: +totalRevenue (분양대금 집중 수령)
+  // t=projMonths: 잔여 정산
+  const cf = new Array(projMonths+1).fill(0);
+  cf[0] = -equity;
+  // PF 상환은 revenue에서 차감되지 않고 이미 사업비에 금융비용으로 포함됨
+  // 따라서 수익 수령 시점에 총수입을 인식
+  const rev1Month = Math.min(revMonth, projMonths);
+  cf[rev1Month] += totalRevenue * 0.7;           // 70% 중도금+잔금
+  cf[projMonths] += totalRevenue * 0.3;           // 30% 입주 후 정산
+  const monthlyIRR = calcIRR(cf, 0.01);
+  return Math.pow(1 + monthlyIRR, 12) - 1;        // 연환산
+}
+
+// ════════════════════════════════════════════
+// UNIT TOGGLE (㎡/평)
+// ════════════════════════════════════════════
+function setUnit(mode) {
+  unitMode = mode;
+  $('btn_sqm').classList.toggle('active', mode==='sqm');
+  $('btn_pyg').classList.toggle('active', mode==='pyg');
+  document.querySelectorAll('.unit-label').forEach(el => el.textContent = mode==='sqm'?'㎡':'평');
+  calculate();
+}
+
+// ════════════════════════════════════════════
+// TYPE SELECT
+// ════════════════════════════════════════════
+function selectType(type, el) {
+  currentType = type;
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  $('type_desc_text').textContent = TYPE_DESC[type];
+
+  $('member_section').classList.toggle('hidden', type==='multi'||type==='single');
+  $('unit_section').classList.toggle('hidden', type==='single');
+  $('dagage_section').classList.toggle('hidden', type!=='single');
+  $('hug_section').classList.toggle('hidden', type==='multi'||type==='single');
+
+  const mh = $('col_member_h');
+  if(mh) mh.textContent = (type==='multi') ? '소유자(세대)' : '조합(세대)';
+
+  // 유형별 기본 공사비 단가 조정
+  const ca = $('cost_above');
+  const sec5num = $('cost_sec_num');
+  const sec6num = $('dcf_sec_num');
+  if(type==='single'){       ca.value=430; }
+  else if(type==='multi'){   ca.value=500; }
+  else if(type==='row'){     ca.value=540; }
+  else {                     ca.value=640; }
+
+  // 이주비: 다가구/다세대는 낮춤
+  const rpu = $('reloc_per_unit');
+  if(type==='single'||type==='multi'){ rpu.value=0; }
+  else { rpu.value=5000; }
+
+  // HUG 섹션 유무에 따라 섹션 번호 재조정
+  if(type==='multi'||type==='single'){
+    if(sec5num) sec5num.textContent='05';
+    if(sec6num) sec6num.textContent='05';
+  } else {
+    if(sec5num) sec5num.textContent='04';  // 공사비
+    if(sec6num) sec6num.textContent='06';  // DCF (HUG=05)
+  }
+
+  updateUnitSummary();
+  calculate();
+}
+
+// ════════════════════════════════════════════
+// TAB
+// ════════════════════════════════════════════
+function switchTab(id, el) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  $('tab-'+id).classList.add('active');
+  el.classList.add('active');
+  calculate();
+}
+
+// ════════════════════════════════════════════
+// UNIT ROWS
+// ════════════════════════════════════════════
+function addUnitRow(data={}) {
+  const excl = data.excl || 59;
+  const id   = rowId++;
+  unitRows.push({
+    id,
+    type:        data.type || '',
+    excl,
+    commonRatio: data.commonRatio || defaultCommonRatio(excl),
+    member:      data.member || 0,
+    sale:        data.sale   || 0,
+    price:       data.price  || 1150
+  });
+  renderUnitTable();
+}
+
+function delUnitRow(id) {
+  unitRows = unitRows.filter(r=>r.id!==id);
+  renderUnitTable();
+}
+
+function updateUnit(id, key, val) {
+  const u = unitRows.find(r=>r.id===id);
+  if(!u) return;
+  u[key] = val;
+  // 전용면적 변경 시 공용비율 자동 제안 (사용자가 직접 수정 안 한 경우)
+  if(key==='excl') u.commonRatio = defaultCommonRatio(val);
+  updateUnitSummary();
+}
+
+function renderUnitTable() {
+  const tbody = $('unit_tbody'); if(!tbody) return;
+  tbody.innerHTML = '';
+  unitRows.forEach(u=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML=`
+      <td><input type="text"   value="${u.type}"        oninput="updateUnit(${u.id},'type',this.value)"          placeholder="59A"  style="width:52px"></td>
+      <td><input type="number" value="${u.excl}"        oninput="updateUnit(${u.id},'excl',+this.value)"         step="0.1" min="1" style="width:56px"></td>
+      <td><input type="number" value="${u.commonRatio}" oninput="updateUnit(${u.id},'commonRatio',+this.value)"  step="0.01" min="1" max="2" style="width:56px"></td>
+      <td><input type="number" value="${u.member}"      oninput="updateUnit(${u.id},'member',+this.value)"       step="1" min="0"   style="width:46px"></td>
+      <td><input type="number" value="${u.sale}"        oninput="updateUnit(${u.id},'sale',+this.value)"         step="1" min="0"   style="width:46px"></td>
+      <td><input type="number" value="${u.price}"       oninput="updateUnit(${u.id},'price',+this.value)"        step="10"          style="width:66px"></td>
+      <td><button class="btn-del" onclick="delUnitRow(${u.id})">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  updateUnitSummary();
+}
+
+function updateUnitSummary() {
+  const total  = unitRows.reduce((s,u)=>s+(u.member||0)+(u.sale||0), 0);
+  const mem    = unitRows.reduce((s,u)=>s+(u.member||0), 0);
+  const sal    = unitRows.reduce((s,u)=>s+(u.sale||0), 0);
+  const el     = $('unit_summary');
+  if(el) el.textContent = `총 ${total}세대 (조합원 ${mem} / 일반분양 ${sal})`;
+  renderQuickTable();
+}
+
+function renderQuickTable() {
+  const qth = $('qth_member');
+  if(qth) qth.textContent = currentType==='multi'?'소유자':'조합';
+  const tbody = $('unit_quick_tbody'); if(!tbody) return;
+  tbody.innerHTML='';
+  let sE=0, sS=0, sMem=0, sSale=0, sTot=0, sRev=0;
+  unitRows.forEach(u=>{
+    const sup  = u.excl * (u.commonRatio||1.2);
+    const tot  = (u.member||0)+(u.sale||0);
+    const rev  = sup * (u.price||0) * 10000/1000000 * (u.sale||0);
+    sE   += u.excl * tot;
+    sS   += sup   * tot;
+    sMem += u.member||0;
+    sSale+= u.sale||0;
+    sTot += tot;
+    sRev += rev;
+    const tr = document.createElement('tr');
+    tr.innerHTML=`<td>${u.type||'—'}</td><td>${(u.excl||0).toFixed(1)}</td><td>${sup.toFixed(1)}</td><td>${u.member||0}</td><td>${u.sale||0}</td><td>${tot}</td><td>${fmt(u.price||0)}</td><td>${fmt(Math.round(rev))}</td>`;
+    tbody.appendChild(tr);
+  });
+  const tr = document.createElement('tr');
+  tr.innerHTML=`<td>합 계</td><td>${sE.toFixed(0)}</td><td>${sS.toFixed(0)}</td><td>${sMem}</td><td>${sSale}</td><td>${sTot}</td><td>—</td><td>${fmt(Math.round(sRev))}</td>`;
+  tbody.appendChild(tr);
+}
+
+// ════════════════════════════════════════════
+// LIVE UPDATE (입력탭 미리보기용)
+// ════════════════════════════════════════════
+function liveUpdate() {
+  updateUnitSummary();
+  calculate();
+}
+
+// ════════════════════════════════════════════
+// CORE CALCULATION ENGINE
+// ════════════════════════════════════════════
+function calcCore(opts={}) {
+  // opts: revMult(분양가배율), costMult(공사비배율) — 민감도용
+  const rm  = opts.revMult  || 1;
+  const cm  = opts.costMult || 1;
+
+  const type       = currentType;
+  const siteArea   = n('site_area') * (unitMode==='pyg'?SQM_PER_PYONG:1);
+  const far        = n('far')/100;
+  const bcr        = n('bcr')/100;
+  const fAbove     = n('floors_above');
+  const fBelow     = n('floors_below');
+  const pkRatio    = n('parking_ratio');
+  const priorAsset = n('prior_asset');   // 백만원 (항상 백만원 입력)
+  const memberCount= n('member_count');
+
+  const cAbove    = n('cost_above');
+  const cBelow    = n('cost_below');
+  const dsgPct    = n('design_pct')/100;
+  const prmPct    = n('permit_pct')/100;
+  const unionPct  = n('union_pct')/100;
+  const relocPer  = n('reloc_per_unit'); // 만원/세대
+  const demolCost = n('demolition_cost');
+  const taxTrust  = n('tax_trust');
+  const finPct    = n('finance_pct')/100;
+  const salesPct  = n('sales_pct')/100;
+
+  const hugYn     = $('hug_yn')?.value || 'n';
+  const hugLimit  = n('hug_limit');
+  const pfLtv     = n('pf_ltv')/100;
+  const hugReloc  = n('hug_reloc_limit');
+
+  const projMonths= n('project_months');
+  const discRate  = n('discount_rate')/100;
+  const revMonth  = n('revenue_month');
+  const equity    = n('equity_input');
+  const costSpread= n('cost_spread');
+
+  // ── 면적 계산 ──
+  const allowGfa   = siteArea * far;
+  let totalExcl=0, totalSupply=0, totalMem=0, totalSale=0, totalUnits=0;
+
+  if(type !== 'single') {
+    unitRows.forEach(u=>{
+      const sup = u.excl * (u.commonRatio||1.2);
+      const tot = (u.member||0) + (u.sale||0);
+      totalExcl   += u.excl * tot;
+      totalSupply += sup   * tot;
+      totalMem    += u.member||0;
+      totalSale   += u.sale||0;
+      totalUnits  += tot;
+    });
+  } else {
+    totalUnits  = n('dg_units');
+    totalExcl   = n('dg_house_area');
+    totalSupply = totalExcl * 1.2;
+  }
+
+  const aboveGfa   = totalSupply;
+  const belowGfa   = siteArea * bcr * fBelow;
+  const totalParking = Math.ceil(totalUnits * pkRatio);
+
+  // ── 이주비 (세대당 × 조합원 수) ──
+  const relocCost = (type==='apt'||type==='row')
+    ? relocPer * memberCount / 100   // 만원 → 백만원
+    : 0;
+
+  // ── 직접 공사비 ──
+  const cA        = aboveGfa * cAbove * cm * 10000/1000000;
+  const cB        = belowGfa * cBelow * cm * 10000/1000000;
+  const directCost= cA + cB;
+
+  const dsgCost   = directCost * dsgPct;
+  const prmCost   = directCost * prmPct;
+  const unionCost = directCost * unionPct;
+  const finCost   = directCost * finPct;
+
+  // ── 분양수입 선산정 (홍보비 위해) ──
+  let saleRevenue = 0;
+  if(type !== 'single') {
+    unitRows.forEach(u=>{
+      const sup = u.excl * (u.commonRatio||1.2);
+      saleRevenue += sup * (u.price||0) * rm * 10000/1000000 * (u.sale||0);
+    });
+  }
+  const salesCost = saleRevenue * salesPct;
+
+  const totalCost = directCost + dsgCost + prmCost + unionCost
+                  + relocCost + demolCost + taxTrust + finCost + salesCost;
+
+  // ── 수입 모델 (유형별) ──
+  let totalRevenue=0, totalBurden=0, avgBurden=0, ratioVal=0;
+
+  if(type==='apt' || type==='row') {
+    // ── 비례율 공식 (올바른 순서) ──
+    // 비례율 = (일반분양 수입 - 총사업비) / 종전자산 평가액
+    // 단, 이 비례율로 조합원 권리가액을 산정 → 분담금 도출
+    ratioVal = priorAsset > 0
+      ? (saleRevenue - totalCost) / priorAsset * 100
+      : 0;
+    const biryeRate = ratioVal / 100;
+
+    // 조합원 분담금 = 신규 분양가액 - (개별 종전자산 × 비례율)
+    const avgPriorPerMember = priorAsset / Math.max(totalMem, 1);
+    const rightVal = avgPriorPerMember * biryeRate;  // 세대당 권리가액(백만)
+
+    unitRows.forEach(u=>{
+      const sup      = u.excl * (u.commonRatio||1.2);
+      const newPrice = sup * (u.price||0) * rm * 10000/1000000;  // 세대당 신규 분양가액(백만)
+      const burden   = Math.max(newPrice - rightVal, 0);
+      totalBurden   += burden * (u.member||0);
+    });
+
+    avgBurden    = totalMem > 0 ? totalBurden / totalMem : 0;
+    totalRevenue = saleRevenue + totalBurden;
+
+  } else if(type==='multi') {
+    totalRevenue = saleRevenue;
+
+  } else {
+    // 다가구: 임대수익 10년 단순 합산
+    const dep        = n('dg_deposit');   // 백만원/세대
+    const mo         = n('dg_monthly');   // 만원/세대
+    const units      = n('dg_units');
+    const annualRent = (dep * 0.04 + mo * 12 / 100) * units;  // 백만원/년
+    totalRevenue     = annualRent * 10;
+  }
+
+  const profit = totalRevenue - totalCost;
+  const margin = totalRevenue > 0 ? profit/totalRevenue*100 : 0;
+  const pfLoan = totalCost * pfLtv;
+
+  // ── NPV (단순 할인) ──
+  const mRate = discRate/12;
+  const npvVal = totalRevenue / Math.pow(1+mRate, revMonth) - totalCost;
+
+  // ── IRR (Newton-Raphson 월별) ──
+  let irrVal = 0;
+  try {
+    const annualIRR = calcMonthlyIRR(totalCost, totalRevenue, equity, projMonths, revMonth, costSpread);
+    if(isFinite(annualIRR)) irrVal = annualIRR * 100;
+  } catch(e) {}
+
+  return {
+    type, siteArea, far, bcr, fAbove, fBelow, pkRatio,
+    priorAsset, memberCount,
+    allowGfa, aboveGfa, belowGfa, totalParking,
+    totalExcl, totalSupply, totalMem, totalSale, totalUnits,
+    cA, cB, directCost, dsgCost, prmCost, unionCost,
+    relocCost, demolCost, taxTrust, finCost, salesCost,
+    totalCost, saleRevenue, totalBurden, avgBurden,
+    totalRevenue, profit, margin, ratioVal,
+    pfLoan, pfLtv, npvVal, irrVal,
+    hugYn, hugLimit, hugReloc,
+    projMonths, equity, discRate, revMonth,
+    relocPer
+  };
+}
+
+// ════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════
+function calculate() {
+  const R = calcCore();
+  lastCalc = R;
+
+  // ── KPI BANNER ──
+  $('kv1').textContent = fmtB(R.totalCost);
+  $('kv2').textContent = fmtB(R.totalRevenue);
+  $('kv3').textContent = fmtB(R.profit);
+  $('kpi3').className  = 'kpi-cell '+(R.profit>=0?'green':'red');
+
+  let kpi4Label='비례율', kpi4Val='—', kpi4Cls='accent';
+  if(R.type==='apt'||R.type==='row'){
+    kpi4Val = fmtP(R.ratioVal);
+    kpi4Cls = R.ratioVal>=100?'green':R.ratioVal>=80?'yellow':'red';
+  } else if(R.type==='multi'){
+    kpi4Label='이익률';
+    kpi4Val  = fmtP(R.margin);
+    kpi4Cls  = R.margin>=15?'green':R.margin>=8?'yellow':'red';
+  } else {
+    const dep=n('dg_deposit'),mo=n('dg_monthly'),units=n('dg_units');
+    const ar=(dep*0.04+mo*12/100)*units;
+    const ry=R.totalCost>0?ar/R.totalCost*100:0;
+    kpi4Label='임대수익률(연)';
+    kpi4Val  = fmtP(ry);
+    kpi4Cls  = ry>=5?'green':ry>=3?'yellow':'red';
+  }
+  $('kpi4_label').textContent = kpi4Label;
+  $('kv4').textContent        = kpi4Val;
+  $('kpi4').className         = 'kpi-cell '+kpi4Cls;
+  $('kpi4_sub').textContent   = R.type==='single'?'10년 임대 합산':'사업성 핵심 지표';
+
+  $('kv5').textContent = fmtP(R.irrVal);
+  $('kpi5').className  = 'kpi-cell '+(R.irrVal>=15?'green':R.irrVal>=8?'yellow':'red');
+
+  // ── 입력탭 요약 카드 ──
+  $('s_site').textContent  = areaStr(R.siteArea);
+  $('s_site2').textContent = unitMode==='sqm' ? sqm2p(R.siteArea)+'평' : (R.siteArea*SQM_PER_PYONG).toFixed(0)+'㎡';
+  $('s_gfa').textContent   = areaStr(R.allowGfa);
+  $('s_units').textContent = R.totalUnits+' 세대';
+  $('s_units2').textContent= R.type!=='single'
+    ? `조합 ${R.totalMem} / 분양 ${R.totalSale}`
+    : `임대 ${R.totalUnits}세대`;
+
+  // ── 비용 미리보기 ──
+  $('cost_preview_body').innerHTML=`
+    <div class="dr"><span class="dl">직접 공사비</span><span class="dv">${fmtM(R.directCost)}</span></div>
+    <div class="dr"><span class="dl i">지상 (${areaStr(R.aboveGfa)})</span><span class="dv">${fmtM(R.cA)}</span></div>
+    <div class="dr"><span class="dl i">지하 (${areaStr(R.belowGfa)})</span><span class="dv">${fmtM(R.cB)}</span></div>
+    <div class="dr"><span class="dl">부대비용 합계</span><span class="dv">${fmtM(R.totalCost-R.directCost)}</span></div>
+    <div class="dr"><span class="dl bold">총 사업비</span><span class="dv tot">${fmtM(R.totalCost)}</span></div>
+  `;
+
+  // ── 결과탭: 면적 ──
+  setDv('r_site',      areaStr(R.siteArea)+' ('+areaStr(R.siteArea===n('site_area')?R.siteArea:R.siteArea)+')');
+  setDv('r_allow_gfa', areaStr(R.allowGfa));
+  setDv('r_above',     areaStr(R.aboveGfa));
+  setDv('r_below',     areaStr(R.belowGfa)+' ('+R.fBelow+'층, 주차 '+R.totalParking+'대)');
+  setDv('r_excl',      areaStr(R.totalExcl));
+  setDv('r_supply',    areaStr(R.totalSupply));
+  setDv('r_units',     R.totalUnits+' 세대');
+  const udet = $('r_units_detail');
+  if(udet){
+    udet.innerHTML = R.type!=='single'
+      ? `<div class="dr"><span class="dl i">조합원</span><span class="dv">${R.totalMem} 세대</span></div>
+         <div class="dr"><span class="dl i">일반분양</span><span class="dv">${R.totalSale} 세대</span></div>`
+      : '';
+  }
+
+  // ── 공사비 ──
+  const relocNote = (R.type==='apt'||R.type==='row')
+    ? `(${fmt(R.relocPer)}만×${R.memberCount}세대)` : '';
+  if($('r_reloc_note')) $('r_reloc_note').textContent = relocNote;
+  setDv('r_c_above',      fmtM(R.cA));
+  setDv('r_c_below',      fmtM(R.cB));
+  setDv('r_c_direct',     fmtM(R.directCost), 'sub');
+  setDv('r_c_design',     fmtM(R.dsgCost));
+  setDv('r_c_permit',     fmtM(R.prmCost));
+  setDv('r_c_reloc',      fmtM(R.relocCost));
+  setDv('r_c_demolition', fmtM(R.demolCost));
+  setDv('r_c_union',      fmtM(R.unionCost));
+  setDv('r_c_tax',        fmtM(R.taxTrust));
+  setDv('r_c_finance',    fmtM(R.finCost));
+  setDv('r_c_sales',      fmtM(R.salesCost));
+  setDv('r_total_cost',   fmtM(R.totalCost), 'tot');
+
+  // ── 수익성 ──
+  let incomeHtml = '';
+  if(R.type==='apt'||R.type==='row'){
+    const ratCls   = R.ratioVal>=100?'g':R.ratioVal>=80?'y':'r';
+    const ratAlert = R.ratioVal>=110?'<div class="alert g">비례율 우수 — 조합원 부담 최소화.</div>'
+      : R.ratioVal>=100?'<div class="alert g">비례율 100% 이상 — 사업 실현 가능.</div>'
+      : R.ratioVal>=80 ?'<div class="alert y">비례율 100% 미만 — 조합원 추가 분담금 발생.</div>'
+      : '<div class="alert r">비례율 80% 미만 — 사업 타당성 재검토 필요.</div>';
+    incomeHtml=`
+      <div class="dr"><span class="dl">일반분양 수입</span><span class="dv">${fmtM(R.saleRevenue)}</span></div>
+      <div class="dr"><span class="dl">조합원 분담금 수입</span><span class="dv">${fmtM(R.totalBurden)}</span></div>
+      <div class="dr"><span class="dl sub">총 수입</span><span class="dv sub">${fmtM(R.totalRevenue)}</span></div>
+      <div class="divl"></div>
+      <div class="dr"><span class="dl">총 사업비</span><span class="dv">${fmtM(R.totalCost)}</span></div>
+      <div class="dr"><span class="dl bold">사업 이익</span><span class="dv ${R.profit>=0?'g tot':'r tot'}">${fmtM(R.profit)}</span></div>
+      <div class="dr"><span class="dl">이익률</span><span class="dv ${R.margin>=15?'g':R.margin>=8?'y':'r'}">${fmtP(R.margin)}</span></div>
+      <div class="divl"></div>
+      <div class="dr"><span class="dl">종전자산 평가액</span><span class="dv">${fmtM(R.priorAsset)}</span></div>
+      <div class="dr"><span class="dl bold">비례율 <span style="font-size:10px;color:var(--muted);font-weight:400">(일반분양수입-총사업비)/종전자산</span></span>
+        <span class="dv ${ratCls} tot">${fmtP(R.ratioVal)}</span>
+      </div>
+      ${ratAlert}
+      <div class="divl"></div>
+      <div class="dr"><span class="dl">조합원 총 분담금</span><span class="dv">${fmtM(R.totalBurden)}</span></div>
+      <div class="dr"><span class="dl bold">세대당 평균 분담금</span><span class="dv y">${fmtM(R.avgBurden)}</span></div>
+    `;
+  } else if(R.type==='multi'){
+    const mCls=R.margin>=15?'g':R.margin>=8?'y':'r';
+    incomeHtml=`
+      <div class="dr"><span class="dl">총 분양수입</span><span class="dv">${fmtM(R.saleRevenue)}</span></div>
+      <div class="divl"></div>
+      <div class="dr"><span class="dl">총 사업비</span><span class="dv">${fmtM(R.totalCost)}</span></div>
+      <div class="dr"><span class="dl bold">사업 이익</span><span class="dv ${R.profit>=0?'g tot':'r tot'}">${fmtM(R.profit)}</span></div>
+      <div class="dr"><span class="dl bold">이익률</span><span class="dv ${mCls}">${fmtP(R.margin)}</span></div>
+      <div class="${R.profit>=0?'alert g':'alert r'}" style="margin-top:8px">${R.profit>=0?'분양가 기준 사업 수지 흑자.':'분양가 재조정 또는 공사비 절감 필요.'}</div>
+    `;
+  } else {
+    const dep=n('dg_deposit'), mo=n('dg_monthly'), units=n('dg_units');
+    const annualRent=(dep*0.04+mo*12/100)*units;
+    const rentYield =R.totalCost>0?annualRent/R.totalCost*100:0;
+    const yCls=rentYield>=5?'g':rentYield>=3?'y':'r';
+    incomeHtml=`
+      <div class="alert a">다가구주택 — 구분등기 불가. 임대수익 모델 (10년 단순 합산) 적용.</div>
+      <div class="dr" style="margin-top:10px"><span class="dl">임대 세대수</span><span class="dv">${units} 세대</span></div>
+      <div class="dr"><span class="dl">총 보증금</span><span class="dv">${fmtM(dep*units)}</span></div>
+      <div class="dr"><span class="dl">보증금 운용수익 (연 4%)</span><span class="dv">${fmtM(dep*0.04*units)}</span></div>
+      <div class="dr"><span class="dl">월세 연환산</span><span class="dv">${fmtM(mo*12/100*units)}</span></div>
+      <div class="dr"><span class="dl bold">연 임대수입</span><span class="dv tot">${fmtM(annualRent)}</span></div>
+      <div class="divl"></div>
+      <div class="dr"><span class="dl">총 사업비</span><span class="dv">${fmtM(R.totalCost)}</span></div>
+      <div class="dr"><span class="dl bold">임대수익률 (연)</span><span class="dv ${yCls} tot">${fmtP(rentYield)}</span></div>
+      <div class="alert ${yCls}" style="margin-top:8px">${rentYield>=5?'임대수익률 양호 (5% 이상).':rentYield>=3?'임대수익률 보통 (3~5%).':'임대수익률 낮음 — 건축비 절감 또는 임대조건 재검토.'}</div>
+      <div class="divl"></div>
+      <div class="dr"><span class="dl">10년 임대수입 합산</span><span class="dv">${fmtM(R.totalRevenue)}</span></div>
+      <div class="dr"><span class="dl bold">10년 단순 이익</span><span class="dv ${R.profit>=0?'g':'r'}">${fmtM(R.profit)}</span></div>
+    `;
+  }
+  $('r_income_head').textContent = R.type==='single'?'임대수익 분석':R.type==='multi'?'수익성 분석 (분양)':'수익성 분석 (분양+조합원)';
+  $('r_income_body').innerHTML   = incomeHtml;
+
+  // ── HUG ──
+  let hugHtml='';
+  if(R.type==='apt'||R.type==='row'){
+    const avgPrice = R.totalSale>0
+      ? unitRows.reduce((s,u)=>s+(u.price||0)*(u.sale||0),0)/R.totalSale : 0;
+    const hugOk   = avgPrice <= R.hugLimit;
+    const relocOk = R.relocCost <= R.hugReloc;
+    hugHtml=`
+      <div class="dr"><span class="dl">평균 분양가 (공급면적 기준)</span>
+        <span class="dv ${hugOk?'g':'r'}">${fmt(avgPrice,0)} 만원/㎡ ${hugOk?'▼ 한도 내':'▲ 한도 초과'}</span>
+      </div>
+      <div class="dr"><span class="dl">HUG 심사 한도</span><span class="dv">${fmt(R.hugLimit,0)} 만원/㎡</span></div>
+      <div class="dr"><span class="dl">이주비 보증 한도</span>
+        <span class="dv ${relocOk?'g':'r'}">${fmtM(R.relocCost)} / 한도 ${fmtM(R.hugReloc)} ${relocOk?'✓':'초과'}</span>
+      </div>
+      <div class="dr"><span class="dl">PF 대출 추정 (LTV ${(R.pfLtv*100).toFixed(0)}%)</span><span class="dv">${fmtM(R.pfLoan)}</span></div>
+      ${!hugOk?'<div class="alert r" style="margin-top:8px">분양가 HUG 한도 초과 — 분양가 조정 필요.</div>':''}
+      ${!relocOk?'<div class="alert y" style="margin-top:8px">이주비 HUG 보증 한도 초과 — 이주비 구조 재검토.</div>':''}
+    `;
+  } else {
+    hugHtml='<div class="alert a">HUG 분양보증은 아파트·연립주택에만 해당. 다세대/다가구 적용 없음.</div>';
+  }
+  $('r_hug_body').innerHTML = hugHtml;
+
+  // ── DCF ──
+  setDv('r_months', R.projMonths+' 개월 ('+(R.projMonths/12).toFixed(1)+'년)');
+  setDv('r_equity', fmtM(R.equity));
+  setDv('r_pf',     fmtM(R.pfLoan));
+  setDv('r_npv',    fmtM(R.npvVal), R.npvVal>=0?'g':'r');
+  setDv('r_irr',    fmtP(R.irrVal), R.irrVal>=15?'g':R.irrVal>=8?'y':'r');
+  $('r_irr_alert').innerHTML = R.irrVal>=15?'<div class="alert g">IRR 15% 이상 — 사업성 양호.</div>'
+    : R.irrVal>=8?'<div class="alert y">IRR 8~15% — 금융비용 수준에 따라 판단 필요.</div>'
+    : '<div class="alert r">IRR 8% 미만 — 자금 조달 비용 대비 사업성 부족.</div>';
+
+  // ── 민감도 / 법규 ──
+  renderSensitivity(R);
+  renderLegalCheck(R);
+}
+
+// ════════════════════════════════════════════
+// SENSITIVITY
+// ════════════════════════════════════════════
+function renderSensitivity(base) {
+  const scenarios = [
+    {label:'분양가 -10%', rm:0.90, cm:1.00},
+    {label:'분양가 -5%',  rm:0.95, cm:1.00},
+    {label:'기본 (Base)', rm:1.00, cm:1.00},
+    {label:'분양가 +5%',  rm:1.05, cm:1.00},
+    {label:'분양가 +10%', rm:1.10, cm:1.00},
+    {label:'공사비 +10%', rm:1.00, cm:1.10},
+    {label:'공사비 +15%', rm:1.00, cm:1.15},
+  ];
+
+  const th = $('sens_th4');
+  if(th) th.textContent = base.type==='single'?'임대수익률(연)':base.type==='multi'?'이익률(%)':'비례율(%)';
+
+  const tbody = $('sens_tbody'); tbody.innerHTML='';
+
+  scenarios.forEach(sc=>{
+    // 각 시나리오를 calcCore로 재계산 (분담금 연동 포함)
+    const S       = calcCore({revMult:sc.rm, costMult:sc.cm});
+    const isBase  = sc.rm===1 && sc.cm===1;
+
+    let kpiVal='—';
+    if(S.type==='apt'||S.type==='row')  kpiVal = fmtP(S.ratioVal);
+    else if(S.type==='multi')           kpiVal = fmtP(S.margin);
+
+    const pCls = S.profit>=0 ? (isBase?'ca':'cg') : 'cr';
+    const kCls = (S.type==='apt'||S.type==='row')
+      ? (S.ratioVal>=100?(isBase?'ca':'cg'):'cr')
+      : (S.margin>=8?(isBase?'ca':'cg'):'cr');
+    const iCls = S.irrVal>=15?'cg':S.irrVal>=8?'cy':'cr';
+
+    const tr = document.createElement('tr');
+    if(isBase) tr.className='base';
+    tr.innerHTML=`
+      <td>${sc.label}${isBase?' ★':''}</td>
+      <td class="${isBase?'ca':''}">${fmt(Math.round(S.saleRevenue))}</td>
+      <td class="${isBase?'ca':''}">${fmt(Math.round(S.totalCost))}</td>
+      <td class="${pCls}">${fmt(Math.round(S.profit))}</td>
+      <td class="${kCls}">${kpiVal}</td>
+      <td class="${isBase?'ca':S.avgBurden>0?'cy':''}">${S.avgBurden>0?fmt(Math.round(S.avgBurden)):'-'}</td>
+      <td class="${iCls}">${fmtP(S.irrVal)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ════════════════════════════════════════════
+// LEGAL CHECK
+// ════════════════════════════════════════════
+function renderLegalCheck(R) {
+  const el = $('legal_check_body'); if(!el) return;
+  const checks = {
+    apt:[
+      {label:'5층 이상 (주택법 아파트 정의)', ok:R.fAbove>=5,   msg:`계획 ${R.fAbove}층`},
+      {label:'세대당 주차 1대 이상 (60㎡ 초과)', ok:R.pkRatio>=1, msg:`${R.pkRatio} 대/세대`},
+    ],
+    row:[
+      {label:'4층 이하',         ok:R.fAbove<=4,          msg:`계획 ${R.fAbove}층`},
+      {label:'연면적 660㎡ 초과', ok:R.aboveGfa>660,       msg:`${areaStr(R.aboveGfa)}`},
+    ],
+    multi:[
+      {label:'4층 이하',         ok:R.fAbove<=4,          msg:`계획 ${R.fAbove}층`},
+      {label:'연면적 660㎡ 이하', ok:R.aboveGfa<=660,      msg:`${areaStr(R.aboveGfa)}`},
+    ],
+    single:[
+      {label:'3층 이하',          ok:R.fAbove<=3,          msg:`계획 ${R.fAbove}층`},
+      {label:'연면적 660㎡ 이하', ok:n('dg_house_area')<=660, msg:`${n('dg_house_area')} ㎡`},
+      {label:'19세대 이하',       ok:n('dg_units')<=19,    msg:`${n('dg_units')} 세대`},
+      {label:'구분등기 불가 (단독주택)',ok:true,             msg:'주의 확인 필요'},
+    ],
+  };
+  const list = checks[R.type]||[];
+  el.innerHTML = list.map(c=>`
+    <div class="dr">
+      <span class="dl">${c.label}</span>
+      <span class="dv ${c.ok?'g':'r'}">${c.msg} ${c.ok?'✓':'✕'}</span>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════
+// RESET
+// ════════════════════════════════════════════
+function resetAll() {
+  if(!confirm('모든 입력값을 초기화합니다.')) return;
+  unitRows=[]; rowId=0;
+  DEFAULT_UNITS.forEach(u=>addUnitRow(u));
+  selectType('apt', document.querySelector('.pill[data-type="apt"]'));
+}
+
+// ── INIT ──
+DEFAULT_UNITS.forEach(u=>addUnitRow(u));
+calculate();
+</script>
+</body>
+</html>
