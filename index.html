@@ -233,6 +233,41 @@ table.urt tr:last-child td{border-bottom:none;font-weight:700;color:var(--text)}
   .res-grid{grid-template-columns:repeat(2,1fr)}
   .res-two-col{grid-template-columns:1fr}
 }
+
+/* ── TOOLTIP ── */
+.tip{
+  position:relative;display:inline-flex;align-items:center;
+  margin-left:5px;cursor:help;
+}
+.tip-icon{
+  width:14px;height:14px;border-radius:50%;
+  background:var(--muted);color:var(--bg);
+  font-size:9px;font-weight:800;font-family:var(--font);
+  display:inline-flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:background .15s;user-select:none;
+  line-height:1;
+}
+.tip:hover .tip-icon{background:var(--accent)}
+.tip-box{
+  visibility:hidden;opacity:0;
+  position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:#1e2338;border:1px solid var(--border);
+  color:var(--text);font-size:12px;font-family:var(--font);
+  line-height:1.55;font-weight:400;
+  padding:9px 13px;border-radius:7px;
+  width:240px;white-space:normal;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);
+  z-index:9999;pointer-events:none;
+  transition:opacity .15s;
+}
+.tip-box::after{
+  content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:#1e2338;
+}
+.tip:hover .tip-box{visibility:visible;opacity:1}
+/* 왼쪽 끝 툴팁이 화면 밖으로 나가지 않도록 */
+.tip.tip-right .tip-box{left:0;transform:none}
+.tip.tip-right .tip-box::after{left:12px;transform:none}
 </style>
 </head>
 <body>
@@ -310,29 +345,29 @@ table.urt tr:last-child td{border-bottom:none;font-weight:700;color:var(--text)}
   <div class="sec-body">
     <div class="row r3">
       <div class="field">
-        <label>대지면적 (<span class="unit-label">㎡</span>)</label>
+        <label>대지면적 (<span class="unit-label">㎡</span>)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">사업 구역 내 전체 대지 합계. 등기부등본 또는 지적측량 성과 기준. 공부상 면적과 실측 차이가 있을 수 있음.</span></span></label>
         <input type="number" id="site_area" value="18781" step="10" oninput="liveUpdate()">
       </div>
       <div class="field">
-        <label>용적률 (%)</label>
+        <label>용적률 (%)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">지상 연면적 ÷ 대지면적 × 100. 허용 연면적 = 대지면적 × 용적률. 가로주택정비사업은 사업보정계수 적용 시 상향 가능.</span></span></label>
         <input type="number" id="far" value="309" step="5" oninput="liveUpdate()">
       </div>
       <div class="field">
-        <label>건폐율 (%)</label>
+        <label>건폐율 (%)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">건축물 바닥면적 ÷ 대지면적 × 100. 이 툴에서는 지하연면적 추정(대지×건폐율×지하층수)에 사용.</span></span></label>
         <input type="number" id="bcr" value="27" step="1" oninput="liveUpdate()">
       </div>
     </div>
     <div class="row r3">
       <div class="field">
-        <label>지상 층수</label>
+        <label>지상 층수<span class="tip"><span class="tip-icon">?</span><span class="tip-box">최고 지상층 기준 입력. 아파트는 5층 이상, 연립은 4층 이하, 다세대·다가구는 4층·3층 이하가 법적 정의.</span></span></label>
         <input type="number" id="floors_above" value="25" step="1" oninput="liveUpdate()">
       </div>
       <div class="field">
-        <label>지하 층수</label>
+        <label>지하 층수<span class="tip"><span class="tip-icon">?</span><span class="tip-box">지하주차 포함 전체 지하층 수. 지하연면적 = 대지면적 × 건폐율 × 지하층수로 산정. 통상 지하 2~3층.</span></span></label>
         <input type="number" id="floors_below" value="3" step="1" oninput="liveUpdate()">
       </div>
       <div class="field">
-        <label>주차 기준 (대/세대)</label>
+        <label>주차 기준 (대/세대)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">서울시 기준: 전용 60㎡ 초과 1대, 이하 0.7대. 소규모 정비사업 완화 시 0.6대까지 가능. 지하면적에 영향.</span></span></label>
         <input type="number" id="parking_ratio" value="1.0" step="0.1" oninput="liveUpdate()">
       </div>
     </div>
@@ -340,12 +375,12 @@ table.urt tr:last-child td{border-bottom:none;font-weight:700;color:var(--text)}
     <div id="member_section">
       <div class="row r2">
         <div class="field">
-          <label>종전자산 평가액 합계 (백만원)</label>
+          <label>종전자산 평가액 합계 (백만원)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">조합원 전원의 사업 전 토지+건물 감정평가액 합계. 비례율 계산의 분모. 과도하게 높으면 비례율 하락.</span></span></label>
           <input type="number" id="prior_asset" value="32100" step="500" oninput="liveUpdate()">
           <span class="hint">조합원 권리가액 산정 기준</span>
         </div>
         <div class="field">
-          <label>조합원 수 (명)</label>
+          <label>조합원 수 (명)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">기존 건물 소유자 수. 이주비 = 이주비 단가 × 조합원 수로 자동 산정. 기부형·매입형 임대 포함 전체 입력.</span></span></label>
           <input type="number" id="member_count" value="107" step="1" oninput="liveUpdate()">
         </div>
       </div>
@@ -385,9 +420,9 @@ table.urt tr:last-child td{border-bottom:none;font-weight:700;color:var(--text)}
         <table class="ut">
           <thead>
             <tr>
-              <th>타입</th>
-              <th>전용(㎡)</th>
-              <th>공용비율</th>
+              <th>타입<span class="tip tip-right"><span class="tip-icon">?</span><span class="tip-box">평면 유형 이름(예: 59A, 74B). 표기용으로만 사용.</span></span></th>
+              <th>전용(㎡)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">주거 전용면적. 벽 안쪽 실사용 공간. 분양 계약의 기준 면적.</span></span></th>
+              <th>공용비율<span class="tip"><span class="tip-icon">?</span><span class="tip-box">공급면적 = 전용 × 공용비율. 소형(49↓)=1.30, 중소(59↓)=1.25, 중형(84↓)=1.20, 대형=1.15.</span></span></th>
               <th id="col_member_h">조합(세대)</th>
               <th>분양(세대)</th>
               <th id="col_price_h">분양가(만/㎡)</th>
@@ -407,54 +442,54 @@ table.urt tr:last-child td{border-bottom:none;font-weight:700;color:var(--text)}
   <div class="sec-body">
     <div class="row r2">
       <div class="field">
-        <label>지상 공사비 단가 (만원/㎡)</label>
+        <label>지상 공사비 단가 (만원/㎡)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">공급면적 기준 적용. 서울 아파트 2024~25년 실적: 600~700만원/㎡. 마감 수준·구조 방식에 따라 ±10~15% 편차.</span></span></label>
         <input type="number" id="cost_above" value="640" step="10" oninput="liveUpdate()">
         <span class="hint">공급면적 기준 (2024~25년 서울 기준)</span>
       </div>
       <div class="field">
-        <label>지하 공사비 단가 (만원/㎡)</label>
+        <label>지하 공사비 단가 (만원/㎡)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">지하연면적(대지×건폐율×지하층수) 기준. 서울 기준 400~500만원/㎡. 지하 층수 깊을수록 단가 상승.</span></span></label>
         <input type="number" id="cost_below" value="450" step="10" oninput="liveUpdate()">
         <span class="hint">지하연면적 기준</span>
       </div>
     </div>
     <div class="row r2">
       <div class="field">
-        <label>설계·감리비 (공사비 %)</label>
+        <label>설계·감리비 (공사비 %)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">직접 공사비 대비 비율. 설계비 3~5% + 감리비 1~3%. 일반적 범위: 5~8%. 복잡도·규모에 따라 달라짐.</span></span></label>
         <input type="number" id="design_pct" value="6.0" step="0.5" oninput="liveUpdate()">
       </div>
       <div class="field">
-        <label>인허가·부대비 (공사비 %)</label>
+        <label>인허가·부대비 (공사비 %)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">인허가 수수료, 토질조사, 측량, 안전진단, 감정평가 등. 일반적 범위: 2~4%.</span></span></label>
         <input type="number" id="permit_pct" value="2.5" step="0.5" oninput="liveUpdate()">
       </div>
     </div>
     <div class="row r3">
       <div class="field">
-        <label>이주비 (만원/세대)</label>
+        <label>이주비 (만원/세대)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">조합원 1인당 임시 거주 지원금. 총 이주비 = 단가 × 조합원 수로 자동 계산. 서울 기준 4,000~8,000만원/세대.</span></span></label>
         <input type="number" id="reloc_per_unit" value="5000" step="100" oninput="liveUpdate()">
         <span class="hint">조합원 수 × 단가 자동 산정</span>
       </div>
       <div class="field">
-        <label>철거·측량비 (백만원)</label>
+        <label>철거·측량비 (백만원)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">기존 건물 철거비 + 경계 측량·지장물 조사 등 고정 비용. 대지 규모 및 구조물 복잡도에 따라 달라짐.</span></span></label>
         <input type="number" id="demolition_cost" value="800" step="50" oninput="liveUpdate()">
       </div>
       <div class="field">
-        <label>조합운영비 (공사비 %)</label>
+        <label>조합운영비 (공사비 %)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">총회 운영비, 회계감사, 업무추진비, 사업계획서 용역비 등. 통상 직접 공사비의 1~2% 수준.</span></span></label>
         <input type="number" id="union_pct" value="1.5" step="0.5" oninput="liveUpdate()">
         <span class="hint">총회비·업무추진비 등</span>
       </div>
     </div>
     <div class="row r3">
       <div class="field">
-        <label>제세금·신탁보수 (백만원)</label>
+        <label>제세금·신탁보수 (백만원)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">취득세, 등록면허세, 신탁회사 보수 등. 신탁 방식 사업의 경우 총사업비의 1~1.5% 수준.</span></span></label>
         <input type="number" id="tax_trust" value="1500" step="50" oninput="liveUpdate()">
       </div>
       <div class="field">
-        <label>금융비용 (공사비 %)</label>
+        <label>금융비용 (공사비 %)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">PF 대출 이자의 사업 기간 전체 누계. PF 금리 연 5~8% × 사업 기간. 직접 공사비 대비 7~12% 수준.</span></span></label>
         <input type="number" id="finance_pct" value="9.0" step="0.5" oninput="liveUpdate()">
         <span class="hint">PF 이자 총 누계</span>
       </div>
       <div class="field">
-        <label>분양·홍보비 (분양수입 %)</label>
+        <label>분양·홍보비 (분양수입 %)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">분양대행사 수수료 + 모델하우스 + 광고비. 분양수입 대비 1.5~3%. 분양가가 높을수록 절대금액 증가.</span></span></label>
         <input type="number" id="sales_pct" value="2.0" step="0.5" oninput="liveUpdate()">
       </div>
     </div>
@@ -466,26 +501,26 @@ table.urt tr:last-child td{border-bottom:none;font-weight:700;color:var(--text)}
     <div class="sec-body">
       <div class="row r2">
         <div class="field">
-          <label>HUG 적용 여부</label>
+          <label>HUG 적용 여부<span class="tip"><span class="tip-icon">?</span><span class="tip-box">주택도시보증공사 분양보증. HUG 보증 없이는 중도금 집단대출 불가. 아파트·연립 분양 시 사실상 필수.</span></span></label>
           <select id="hug_yn" onchange="liveUpdate()">
             <option value="y">적용 (분양보증)</option>
             <option value="n">미적용</option>
           </select>
         </div>
         <div class="field">
-          <label>분양가 심사 한도 (만원/㎡)</label>
+          <label>분양가 심사 한도 (만원/㎡)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">HUG가 인근 시세 대비 과도한 분양가에 보증을 거절하는 기준. 지역·단지별 상이. 초과 시 보증 거절.</span></span></label>
           <input type="number" id="hug_limit" value="1700" step="10" oninput="liveUpdate()">
           <span class="hint">마포구 2025년 기준</span>
         </div>
       </div>
       <div class="row r2">
         <div class="field">
-          <label>PF 대출 LTV (%)</label>
+          <label>PF 대출 LTV (%)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">Loan-to-Value: 총사업비 대비 PF 대출 비율. 통상 50~65%. 나머지는 자기자본·조합원 분담금 선납으로 조달.</span></span></label>
           <input type="number" id="pf_ltv" value="60" step="5" oninput="liveUpdate()">
           <span class="hint">총사업비 대비 (HUG·DCF 공용)</span>
         </div>
         <div class="field">
-          <label>이주비 보증 한도 (백만원)</label>
+          <label>이주비 보증 한도 (백만원)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">HUG 이주비 보증 승인 총액 기준. 한도 초과 시 초과분은 조합 자체 조달 또는 이주비 축소 필요.</span></span></label>
           <input type="number" id="hug_reloc_limit" value="1500" step="100" oninput="liveUpdate()">
           <span class="hint">HUG 이주비 보증 승인 총액</span>
         </div>
@@ -498,28 +533,28 @@ table.urt tr:last-child td{border-bottom:none;font-weight:700;color:var(--text)}
   <div class="sec-body">
     <div class="row r3">
       <div class="field">
-        <label>사업 기간 (개월)</label>
+        <label>사업 기간 (개월)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">인허가 착수~준공·입주 전체 기간. 가로주택 실적 기준 48~72개월. 기간이 길수록 금융비용·기회비용 증가.</span></span></label>
         <input type="number" id="project_months" value="72" step="6" oninput="liveUpdate()">
         <span class="hint">인허가~준공 기준</span>
       </div>
       <div class="field">
-        <label>할인율 (연 %)</label>
+        <label>할인율 (연 %)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">미래 현금흐름을 현재가치로 환산하는 기준 수익률(기회비용). PF 금리보다 1~2%p 높게 설정하는 것이 일반적.</span></span></label>
         <input type="number" id="discount_rate" value="8.0" step="0.5" oninput="liveUpdate()">
       </div>
       <div class="field">
-        <label>분양수입 시점 (개월)</label>
+        <label>분양수입 시점 (개월)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">착수 후 분양 중도금·잔금이 집중적으로 들어오는 시점. NPV·IRR 계산에서 현금유입 발생 시점으로 사용.</span></span></label>
         <input type="number" id="revenue_month" value="42" step="3" oninput="liveUpdate()">
         <span class="hint">착수 후 분양대금 집중 시점</span>
       </div>
     </div>
     <div class="row r2">
       <div class="field">
-        <label>자기자본 투입액 (백만원)</label>
+        <label>자기자본 투입액 (백만원)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">PF 대출 전 조합·시행사가 직접 투입하는 현금. IRR은 이 자기자본 기준으로 계산. 초기 인허가·이주비 등에 사용.</span></span></label>
         <input type="number" id="equity_input" value="9200" step="500" oninput="liveUpdate()">
         <span class="hint">초기 토지비·부대비 자부담</span>
       </div>
       <div class="field">
-        <label>비용 집중 구간 (개월)</label>
+        <label>비용 집중 구간 (개월)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">공사비 지출이 완료되는 시점. IRR 현금흐름 모형에서 비용 발생 구간의 종료 시점으로 사용.</span></span></label>
         <input type="number" id="cost_spread" value="60" step="6" oninput="liveUpdate()">
         <span class="hint">공사비 지출 종료 시점</span>
       </div>
@@ -553,7 +588,7 @@ table.urt tr:last-child td{border-bottom:none;font-weight:700;color:var(--text)}
     <div class="res-body" style="padding:10px 16px">
       <table class="urt">
         <thead><tr>
-          <th>타입</th><th>전용(㎡)</th><th>공급(㎡)</th>
+          <th>타입<span class="tip tip-right"><span class="tip-icon">?</span><span class="tip-box">평면 유형 이름(예: 59A, 74B). 표기용으로만 사용.</span></span></th><th>전용(㎡)<span class="tip"><span class="tip-icon">?</span><span class="tip-box">주거 전용면적. 벽 안쪽 실사용 공간. 분양 계약의 기준 면적.</span></span></th><th>공급(㎡)</th>
           <th id="qth_member">조합</th><th>분양</th><th>합계</th>
           <th id="price_unit_th">분양가(만/㎡)</th><th>분양수입(백만)</th>
         </tr></thead>
@@ -718,8 +753,8 @@ const fmt = (v,d=0) => v.toLocaleString('ko-KR',{minimumFractionDigits:d,maximum
 const fmtM  = v => fmt(Math.round(v)) + ' 백만';
 const fmtB  = v => fmt(Math.round(v/100)) + '억';  // v: 백만원 → 억(콤마)
 const fmtP  = v => fmt(v,1) + '%';
-const sqm2p   = v => (v / SQM_PER_PYONG).toFixed(1);
-const areaStr = v => unitMode==='sqm' ? fmt(v,1)+'㎡' : fmt(v/SQM_PER_PYONG,1)+'평';
+const sqm2p   = v => fmt(v/SQM_PER_PYONG,2);
+const areaStr = v => { const val=unitMode==='sqm'?v:v/SQM_PER_PYONG; return fmt(val,2)+(unitMode==='sqm'?'㎡':'평'); };
 // 단가 변환: 만원/㎡ → 만원/평 (1평=3.30579㎡)
 const priceStr  = (v, unit='㎡') => {
   // v: 만원/㎡ 기준
